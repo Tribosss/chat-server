@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using chat_server.Model;
+using chat_server_csharp.Model;
 using DotNetEnv;
 using MySql.Data.MySqlClient;
 
-namespace chat_server
+namespace chat_server_csharp
 {
     internal class DBClient
     {

@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace chat_server
+namespace chat_server_csharp
 {
     internal class ClientData
     {

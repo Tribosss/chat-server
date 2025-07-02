@@ -2,7 +2,7 @@
 using System.Net.Sockets;
 using System.Text;
 
-namespace chat_server
+namespace chat_server_csharp
 {
     internal class ClientManager
     {
@@ -15,6 +15,7 @@ namespace chat_server
         {
             ClientData currentClient = new ClientData(newClient);
             clientDict.TryAdd(currentClient.ClientKey, currentClient);
+
 
             // Call ReceiveLoopAsync
             ReceiveLoopAsync(currentClient)
@@ -54,8 +55,7 @@ namespace chat_server
             if (string.IsNullOrEmpty(client.ClientId) && CheckID(strData))
             {
                 client.ClientId = strData.Substring(3);
-                string AccessLog = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {client.ClientId} Access Server";
-                EventHandler?.Invoke(AccessLog, StaticDefine.ADD_ACCESS_LOG);
+                Console.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] user <{client.ClientId}> is Access Server");
                 return Task.CompletedTask;
             }
 

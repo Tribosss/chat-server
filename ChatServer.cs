@@ -1,10 +1,10 @@
-﻿using chat_server.Model;
+﻿using chat_server_csharp.Model;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace chat_server
+namespace chat_server_csharp
 {
     internal class ChatServer
     {
@@ -160,8 +160,10 @@ namespace chat_server
         {
             TcpListener listener = new TcpListener(new IPEndPoint(IPAddress.Any, 9999));
             listener.Start();
+            
+            Console.WriteLine("Server is running...");
 
-            while(true)
+            while (true)
             {
                 Task<TcpClient> acceptTask = listener.AcceptTcpClientAsync();
                 acceptTask.Wait();

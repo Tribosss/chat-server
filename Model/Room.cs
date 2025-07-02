@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace chat_server.Model
+namespace chat_server_csharp.Model
 {
     internal class Room
     {
