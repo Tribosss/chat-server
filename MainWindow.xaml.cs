@@ -20,7 +20,6 @@ namespace chat_server
             InitializeComponent();
 
             ChatServer cs = new ChatServer();
-            cs.ConsoleView();
         }
     } 
 }

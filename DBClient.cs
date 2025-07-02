@@ -54,11 +54,14 @@ namespace chat_server
             MySqlDataReader rdr = cmd.ExecuteReader();
             if (rdr == null) return members;
 
-            Member member = new Member();
             while (rdr.Read())
             {
-                member.RoomId = roomId;
-                member.EmpId = rdr[0].ToString();
+
+                Member member = new Member()
+                {
+                    RoomId = roomId,
+                    EmpId = rdr[0].ToString()
+                };
                 members.Add(member);
             }
 
@@ -88,7 +91,6 @@ namespace chat_server
             string? roomId;
             while(rdr.Read())
             {
-
                 Room room = new Room() { Id = rdr[0].ToString() };
                 roomIds.Add(room);
             }
@@ -113,15 +115,18 @@ namespace chat_server
 
             string? senderId;
             string? message;
-            ChattingLog chatLog = new ChattingLog();
             while (rdr.Read())
             {
                 senderId = rdr[0].ToString();
                 message = rdr[1].ToString();
                 if (message == null) continue;
-                chatLog.SenderId = senderId;
-                chatLog.Msg = message;
-                chatLog.RoomId = roomId;
+
+                ChattingLog chatLog = new ChattingLog()
+                {
+                    SenderId = senderId,
+                    Msg = message,
+                    RoomId = roomId
+                };
                 chatLogs.Add(chatLog);
             }
 
@@ -137,13 +142,20 @@ namespace chat_server
 
             string createdAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string query = "insert into chat_messages(room_id, sender_id, msg, created_at) ";
-            query += $"values('{chat.RoomId}', '{chat.SenderId}', '{chat.Msg}', '{createdAt}'";
+            query += $"values('{chat.RoomId}', '{chat.SenderId}', '{chat.Msg}', '{createdAt}');";
 
             MySqlCommand cmd = new MySqlCommand(query, connection);
 
-            connection.Close();
-            if (cmd.ExecuteNonQuery() == 1) return 0;
-            else return -1;
+            if (cmd.ExecuteNonQuery() == 1)
+            { 
+                connection.Close();
+                return 0;
+            }
+            else
+            {
+                connection.Close();
+                return -1;
+            }
         }
         public int CreateRoom(Room room, List<Member> members) {
             if (connection == null) return -1;
