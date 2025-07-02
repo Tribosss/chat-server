@@ -26,7 +26,6 @@ namespace chat_server
 
             temp = tcpClient.Client.LocalEndPoint.ToString().Split(splitDivision);
             this.clientNumber = int.Parse(temp[3]);
-            Console.WriteLine($"Successful Connect of User {clientNumber}");
         }
     }
 }

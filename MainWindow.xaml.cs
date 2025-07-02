@@ -22,5 +22,5 @@ namespace chat_server
             ChatServer cs = new ChatServer();
             cs.ConsoleView();
         }
-    }
+    } 
 }

@@ -1,71 +1,72 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace chat_server
 {
     internal class ClientManager
     {
         public static ConcurrentDictionary<int, ClientData> clientDict = new ConcurrentDictionary<int, ClientData> ();
-        public event Action<string, string> msgParsingEvt = null;
-        public event Action<string, int> evtHandler = null;
+        public event Action<string, string>? messageParsingAction = null;
+        public event Action<string, int>? EventHandler = null;
 
+        // 새로운 Client 접속 시 실행 
         public void AddClient(TcpClient newClient)
         {
             ClientData currentClient = new ClientData(newClient);
+            clientDict.TryAdd(currentClient.clientNumber, currentClient);
 
-            try
-            {
-                NetworkStream stream = currentClient.tcpClient.GetStream();
-                clientDict.TryAdd(currentClient.clientNumber, currentClient);
-            }
-            catch (Exception e) {
-                Console.WriteLine(e.ToString());
-            }
-        }
-
-        private void DataReceived(IAsyncResult ar)
-        {
-            ClientData client = ar.AsyncState as ClientData;
-
-            try
-            {
-                int byteLength = client.tcpClient.GetStream().EndRead(ar);
-                string stringData = Encoding.Default.GetString(client.readBuffer, 0, byteLength);
-                NetworkStream stream = client.tcpClient.GetStream();
-                stream.BeginRead(
-                    client.readBuffer,
-                    0,
-                    client.readBuffer.Length,
-                    new AsyncCallback(DataReceived),
-                    client
+            // Call ReceiveLoopAsync
+            ReceiveLoopAsync(currentClient)
+                // Task 끝난 후 예외 Exception Logging
+                .ContinueWith(
+                    t => Console.WriteLine(t.Exception),
+                    TaskContinuationOptions.OnlyOnFaulted
                 );
+        }
 
-                if (string.IsNullOrEmpty(client.clientName) && evtHandler != null && CheckID(stringData)) {
-                    string username = stringData.Substring(3);
-                    client.clientName = username;
-                    string accessLog = string.Format($"[{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}] {client.clientName} Access Server");
-                    evtHandler.Invoke(accessLog, StaticDefine.ADD_ACCESS_LOG);
-                }
-
-                if (msgParsingEvt != null)
-                {
-                    msgParsingEvt.BeginInvoke(client.clientName, stringData, null, null);
-                }
-
-            } catch (Exception e)
+        // Client에게 데이터 수신
+        private async Task ReceiveLoopAsync(ClientData client)
+        {
+            try
             {
-                Console.WriteLine(e.ToString());
+                while (true)
+                {
+                    NetworkStream stream = client.tcpClient.GetStream();
+                    byte[] buffer = client.readBuffer;     
+                    int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    if (bytesRead == 0) break;
+
+                    string strData = Encoding.Default.GetString(buffer, 0, bytesRead);
+                    await HandleReceivedAsync(client, strData);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
         }
 
-        private bool CheckID(string id) {
-            if (id.Contains("%^&")) return true;
-            return false;
+        // 수신한 데이터 처리
+        private Task HandleReceivedAsync(ClientData client, string strData)
+        {
+            // 최초 접속 처리
+            if (string.IsNullOrEmpty(client.clientName) && CheckID(strData))
+            {
+                client.clientName = strData.Substring(3);
+                string AccessLog = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {client.clientName} Access Server";
+                EventHandler?.Invoke(AccessLog, StaticDefine.ADD_ACCESS_LOG);
+                return Task.CompletedTask;
+            }
+
+            if (messageParsingAction != null) return Task.Run(() => messageParsingAction(client.clientName, strData));
+
+            return Task.CompletedTask;
+        }
+
+        private bool CheckID(string id)
+        {
+            return id.Contains("%^&");
         }
     }
 }
