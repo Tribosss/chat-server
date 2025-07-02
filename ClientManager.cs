@@ -6,7 +6,7 @@ namespace chat_server
 {
     internal class ClientManager
     {
-        public static ConcurrentDictionary<int, ClientData> clientDict = new ConcurrentDictionary<int, ClientData> ();
+        public static ConcurrentDictionary<string, ClientData> clientDict = new ConcurrentDictionary<string, ClientData> ();
         public event Action<string, string>? messageParsingAction = null;
         public event Action<string, int>? EventHandler = null;
 
@@ -14,7 +14,7 @@ namespace chat_server
         public void AddClient(TcpClient newClient)
         {
             ClientData currentClient = new ClientData(newClient);
-            clientDict.TryAdd(currentClient.clientNumber, currentClient);
+            clientDict.TryAdd(currentClient.ClientKey, currentClient);
 
             // Call ReceiveLoopAsync
             ReceiveLoopAsync(currentClient)
@@ -51,15 +51,15 @@ namespace chat_server
         private Task HandleReceivedAsync(ClientData client, string strData)
         {
             // 최초 접속 처리
-            if (string.IsNullOrEmpty(client.clientName) && CheckID(strData))
+            if (string.IsNullOrEmpty(client.ClientId) && CheckID(strData))
             {
-                client.clientName = strData.Substring(3);
-                string AccessLog = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {client.clientName} Access Server";
+                client.ClientId = strData.Substring(3);
+                string AccessLog = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {client.ClientId} Access Server";
                 EventHandler?.Invoke(AccessLog, StaticDefine.ADD_ACCESS_LOG);
                 return Task.CompletedTask;
             }
 
-            if (messageParsingAction != null) return Task.Run(() => messageParsingAction(client.clientName, strData));
+            if (messageParsingAction != null) return Task.Run(() => messageParsingAction(client.ClientId, strData));
 
             return Task.CompletedTask;
         }

@@ -59,7 +59,7 @@ namespace chat_server
         private void RemoveClient(ClientData targetClient)
         {
             ClientData result = null;
-            ClientManager.clientDict.TryRemove(targetClient.clientNumber, out result);
+            ClientManager.clientDict.TryRemove(targetClient.ClientKey, out result);
         }
 
         // Message Parsing 
@@ -79,29 +79,29 @@ namespace chat_server
         }
 
         // 대상자에게 메시지 전달
-        private void SendMsgToClient(List<string> msgList, string sender)
+        private void SendMsgToClient(List<string> msgList, string senderId)
         {
             string parsedMessage = "";
             string roomId = "";
 
-            int senderNumber = -1;
-            int receiverNumber = -1;
+            string senderKey = "";
+            string receiverKey = "";
 
             foreach (var item in msgList) {
                 string[] splitedMsg = item.Split("<");
 
                 roomId = splitedMsg[0];
-                parsedMessage = string.Format($"{sender}<{splitedMsg[1]}>");
+                parsedMessage = string.Format($"{senderId}<{splitedMsg[1]}>");
 
-                senderNumber = GetClientNumber(sender);
+                senderKey = GetClientNumber(senderId);
 
-                if (senderNumber == -1) return;
+                if (string.IsNullOrEmpty(senderKey)) return;
 
                 if (parsedMessage.Contains("<GiveMeUserList"))
                 {
                     string userListStringData = "ADMIN<";
 
-                    List<Room> rooms = _dbClient.GetRoomIdList(sender);
+                    List<Room> rooms = _dbClient.GetRoomIdList(senderId);
 
                     foreach(Room room in rooms)
                     {
@@ -112,7 +112,7 @@ namespace chat_server
                     byte[] userListByteData = new byte[userListStringData.Length];
 
                     userListByteData = Encoding.Default.GetBytes(userListStringData);
-                    ClientManager.clientDict[senderNumber].tcpClient.GetStream().Write(userListByteData, 0, userListByteData.Length);
+                    ClientManager.clientDict[senderKey].tcpClient.GetStream().Write(userListByteData, 0, userListByteData.Length);
 
                     return;
                 }
@@ -121,39 +121,39 @@ namespace chat_server
                 ChattingLog log = new ChattingLog()
                 {
                     Msg = splitedMsg[1],
-                    SenderId = sender,
+                    SenderId = senderId,
                     RoomId = roomId,
                     CreatedAt = createdAt,
                 };
 
                 List<Member> members = _dbClient.GetMembersByRoomId(roomId);
                 foreach (Member member in members) {
-                    receiverNumber = GetClientNumber(member.EmpId);
+                    receiverKey = GetClientNumber(member.EmpId);
 
-                    if (receiverNumber == senderNumber) continue;
+                    if (receiverKey == senderKey) continue;
 
                     ChattingLog logParam = new ChattingLog()
                     {
                         RoomId = roomId,
-                        SenderId = sender,
+                        SenderId = senderId,
                         Msg = splitedMsg[1],
                         CreatedAt = createdAt,
                     };
                     _dbClient.InsertChattingLog(logParam);
 
-                    if (receiverNumber == -1) continue;
+                    if (string.IsNullOrEmpty(senderKey)) continue;
                     byte[] sendByteData = Encoding.Default.GetBytes(parsedMessage);
-                    ClientManager.clientDict[receiverNumber].tcpClient.GetStream().Write(sendByteData, 0, sendByteData.Length);
+                    ClientManager.clientDict[receiverKey].tcpClient.GetStream().Write(sendByteData, 0, sendByteData.Length);
                 }
             }
         }
 
-        private int GetClientNumber(string targetClientName)
+        private string GetClientNumber(string targetClientName)
         {
             foreach (var item in ClientManager.clientDict) {
-                if (item.Value.clientName == targetClientName) return item.Value.clientNumber;
+                if (item.Value.ClientId == targetClientName) return item.Value.ClientKey;
             }
-            return -1;
+            return "";
         }
 
         private void ServerRun()
