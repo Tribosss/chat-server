@@ -126,22 +126,26 @@ namespace chat_server_csharp
                     CreatedAt = createdAt,
                 };
 
+                Console.WriteLine($"[{createdAt}] {senderId}(roomId:{roomId})> {splitedMsg[1]} ");
+
                 List<Member> members = _dbClient.GetMembersByRoomId(roomId);
                 foreach (Member member in members) {
                     receiverKey = GetClientNumber(member.EmpId);
 
-                    if (receiverKey == senderKey) continue;
-
-                    ChattingLog logParam = new ChattingLog()
+                    if (member.EmpId == senderId)
                     {
-                        RoomId = roomId,
-                        SenderId = senderId,
-                        Msg = splitedMsg[1],
-                        CreatedAt = createdAt,
-                    };
-                    _dbClient.InsertChattingLog(logParam);
+                        ChattingLog logParam = new ChattingLog()
+                        {
+                            RoomId = roomId,
+                            SenderId = senderId,
+                            Msg = splitedMsg[1],
+                            CreatedAt = createdAt,
+                        };
+                        _dbClient.InsertChattingLog(logParam);
+                        continue;
+                    }
 
-                    if (string.IsNullOrEmpty(senderKey)) continue;
+                    if (string.IsNullOrEmpty(receiverKey)) continue;
                     byte[] sendByteData = Encoding.Default.GetBytes(parsedMessage);
                     ClientManager.clientDict[receiverKey].tcpClient.GetStream().Write(sendByteData, 0, sendByteData.Length);
                 }
